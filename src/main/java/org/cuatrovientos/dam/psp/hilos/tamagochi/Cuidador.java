@@ -19,13 +19,7 @@ public class Cuidador {
             
             mostrarEstadoTamagotchis();
             
-            System.out.println("\n--- Menú de Acciones ---");
-            System.out.println("1. Alimentar Tamagotchi (comida)");
-            System.out.println("2. Limpiar Tamagotchi");
-            System.out.println("3. Jugar con Tamagotchi");
-            System.out.println("4. Matar Tamagotchi (Si está Ocioso)");
-            System.out.println("5. Salir del programa (Mata a todos los Tamagotchis)");
-            System.out.print("Elige una acción (1-5): ");
+            mostrarMenuEnConsola();
             
             try {
                 int opcion = Integer.parseInt(scanner.nextLine());
@@ -56,6 +50,16 @@ public class Cuidador {
         System.out.println("El Cuidador se despide. ¡Hasta pronto!");
     }
 
+	private static void mostrarMenuEnConsola() {
+		System.out.println("\n--- Menú de Acciones ---");
+		System.out.println("1. Alimentar Tamagotchi (comida)");
+		System.out.println("2. Limpiar Tamagotchi");
+		System.out.println("3. Jugar con Tamagotchi");
+		System.out.println("4. Matar Tamagotchi (Si está Ocioso)");
+		System.out.println("5. Salir del programa (Mata a todos los Tamagotchis)");
+		System.out.print("Elige una acción (1-5): ");
+	}
+
 
     private static void crearYLanzarTamagotchis(int cantidad) {
         for (int i = 1; i <= cantidad; i++) {
@@ -76,12 +80,7 @@ public class Cuidador {
             Tamagochi tama = misTamagotchis.get(i);
             
             if (tama.isVivo() || tama.getEstado() == EstadoTamagochi.MUERTO) {
-                System.out.printf("[%d] %s | Estado: %s | Suciedad: %d/10 | Vivo: %b\n", 
-                    i + 1, 
-                    tama.getNombreTama(), 
-                    tama.getEstado().toString(), 
-                    tama.getSuciedad(),
-                    tama.isVivo());
+                System.out.printf("[" + i +1 + "] " + tama.getNombreTama() + " | Estado: " + tama.getEstado().toString() + " | Suciedad: " + tama.getSuciedad() + "/10 | Vivo: " + tama.isVivo() + "\n");
             }
         }
     }

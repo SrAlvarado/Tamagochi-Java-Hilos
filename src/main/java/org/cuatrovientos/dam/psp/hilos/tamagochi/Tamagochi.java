@@ -54,19 +54,9 @@ public class Tamagochi implements Runnable{
 					System.out.println("\n"+nombreTama + " Suciedad actual: " + this.nivelSuciedad);
 				}
 				
-				if (this.nivelSuciedad >= 5 && this.nivelSuciedad < 10) {
-					System.out.println("!!Aviso " + nombreTama + ": Estoy empezando a estar MUY SUCIO (" + nivelSuciedad + ")");
-				}else if (this.nivelSuciedad >= 10) {
-					System.out.println("!!! ALERTA MÁXIMA " + nombreTama + ": He llegado a " + this.nivelSuciedad + " de suciedad. ¡HASTA LA VISTA BABY!");				
-					this.vivo = false;
-				}
+				comprobarNivelDeSuciedad();
 				
-				long tiempoActual = System.currentTimeMillis();
-				
-				if (tiempoActual - tiempoInicioVida >= TIEMPO_VIDA_MAX) {
-					System.out.println("!!! AVISO " + nombreTama + ": Mi tiempo de vida de 5 minutos ha terminado. ¡HASTA LA VISTA BABY!");
-                    this.vivo = false; 
-				}
+				comprobarTiempoDeVida(tiempoInicioVida);
 				
 				
 			} catch (InterruptedException e) {
@@ -78,7 +68,37 @@ public class Tamagochi implements Runnable{
 		this.estadoTama = EstadoTamagochi.MUERTO; 
         System.out.println(nombreTama + " ha muerto. (Estado: " + this.estadoTama + ")");
 	}
-	
+
+	/**
+	 * @param tiempoInicioVida
+	 */
+	private void comprobarTiempoDeVida(long tiempoInicioVida) {
+		long tiempoActual = System.currentTimeMillis();
+		
+		if (tiempoActual - tiempoInicioVida >= TIEMPO_VIDA_MAX) {
+			System.out.println("!!! AVISO " + nombreTama + ": Mi tiempo de vida de 5 minutos ha terminado. ¡HASTA LA VISTA BABY!");
+		    this.vivo = false; 
+		}
+	}
+
+	/**
+	 * 
+	 */
+	private void comprobarNivelDeSuciedad() {
+		if (this.nivelSuciedad >= 5 && this.nivelSuciedad < 10) {
+			System.out.println("!!Aviso " + nombreTama + ": Estoy empezando a estar MUY SUCIO (" + nivelSuciedad + ")");
+		}else if (this.nivelSuciedad >= 10) {
+			System.out.println("!!! ALERTA MÁXIMA " + nombreTama + ": He llegado a " + this.nivelSuciedad + " de suciedad. ¡HASTA LA VISTA BABY!");				
+			this.vivo = false;
+		}
+	}
+	/**
+	 * Uso 'synchronized' para asegurar que solo un hilo 
+	 * pueda ejecutar este método a la vez para esta instancia de Tamagotchi.
+	 *
+	 * Esto es crucial para cumplir con la regla del enunciado: "El Tamagotchi sólo podrá realizar una acción al mismo tiempo".
+	 * Mientras esté comiendo, no podrá limpiarse ni ser matado, ya que el candado del objeto estará tomado.
+	 */
 	public synchronized void alimentarse(String comida) {
 		if (this.estadoTama == EstadoTamagochi.ESPERANDO && this.vivo) {
 			this.estadoTama = EstadoTamagochi.COMIENDO;
@@ -145,16 +165,16 @@ public class Tamagochi implements Runnable{
 	        return false;
 	    }
 	    
-	    boolean esCorrecta = (respuesta == this.resultadoJuegoCorrecto);
+	    boolean respuestaEsCorrecta = (respuesta == this.resultadoJuegoCorrecto);
 	    
-	    if (esCorrecta) {
+	    if (respuestaEsCorrecta) {
 	        System.out.println("¡Correcto! " + nombreTama + " dice: ¡Bien hecho, Cuidador! Juego finalizado.");
 	        this.estadoTama = EstadoTamagochi.ESPERANDO;
 	    } else {
 	        System.out.println("¡Incorrecto! " + nombreTama + " dice: ¡Sigo jugando! Generando nueva pregunta...");
 	    }
 	    
-	    return esCorrecta;
+	    return respuestaEsCorrecta;
 	}
 	
 	public synchronized boolean matar() {
