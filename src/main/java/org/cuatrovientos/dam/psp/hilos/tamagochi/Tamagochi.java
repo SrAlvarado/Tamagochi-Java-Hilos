@@ -6,7 +6,7 @@ public class Tamagochi implements Runnable{
 	private String nombreTama;
 	private EstadoTamagochi estadoTama;
 	private int nivelSuciedad;
-	private boolean estadoVida;
+	private boolean vivo;
 	private Random rnd;
 	private static final long TIEMPO_ENSUCIAR = 20000;
 	private static final long TIEMPO_VIDA_MAX = 300000;
@@ -15,7 +15,7 @@ public class Tamagochi implements Runnable{
 		this.nombreTama = nombreTama;
 		this.estadoTama = EstadoTamagochi.ESPERANDO;
         this.nivelSuciedad = 0;
-        this.estadoVida  = true;
+        this.vivo  = true;
         this.rnd = new Random();
 	}
 	
@@ -32,7 +32,7 @@ public class Tamagochi implements Runnable{
     }
 
     public boolean isVivo() {
-        return estadoVida;
+        return vivo;
     }
     
     
@@ -41,7 +41,7 @@ public class Tamagochi implements Runnable{
 		System.out.println(nombreTama + " ha despertado y está " + estadoTama);
 		long tiempoInicioVida = System.currentTimeMillis();
 		
-		while(estadoVida) {
+		while(vivo) {
 			try {
 				Thread.sleep(TIEMPO_ENSUCIAR);
 				
@@ -54,14 +54,14 @@ public class Tamagochi implements Runnable{
 					System.out.println("!!Aviso " + nombreTama + ": Estoy empezando a estar MUY SUCIO (" + nivelSuciedad + ")");
 				}else if (this.nivelSuciedad >= 10) {
 					System.out.println("!!! ALERTA MÁXIMA " + nombreTama + ": He llegado a " + this.nivelSuciedad + " de suciedad. ¡HASTA LA VISTA BABY!");				
-					this.estadoVida = false;
+					this.vivo = false;
 				}
 				
 				long tiempoActual = System.currentTimeMillis();
 				
 				if (tiempoActual - tiempoInicioVida >= TIEMPO_VIDA_MAX) {
 					System.out.println("!!! AVISO " + nombreTama + ": Mi tiempo de vida de 5 minutos ha terminado. ¡HASTA LA VISTA BABY!");
-                    this.estadoVida = false; 
+                    this.vivo = false; 
 				}
 				
 				
@@ -71,10 +71,12 @@ public class Tamagochi implements Runnable{
             }
 		}
 		
+		this.estadoTama = EstadoTamagochi.MUERTO; 
+        System.out.println(nombreTama + " ha muerto. (Estado: " + this.estadoTama + ")");
 	}
 	
 	public synchronized void alimentarse(String comida) {
-		if (this.estadoTama == EstadoTamagochi.ESPERANDO && this.estadoVida) {
+		if (this.estadoTama == EstadoTamagochi.ESPERANDO && this.vivo) {
 			this.estadoTama = EstadoTamagochi.COMIENDO;
 			System.out.println("-> " + nombreTama + " EMPIEZA de comer " + comida);
 			
@@ -92,6 +94,25 @@ public class Tamagochi implements Runnable{
             System.out.println(nombreTama + " no puede comer ahora, está " + this.estadoTama);
         }
 		
+	}
+	
+	public synchronized void limpiarse() {
+		if (this.estadoTama == EstadoTamagochi.ESPERANDO && this.vivo) {
+			this.estadoTama = EstadoTamagochi.LIMPIANDOSE;
+			
+			System.out.println("-> " + nombreTama + " EMPIEZA a limpiarse");
+			
+			try {
+				Thread.sleep(TIEMPO_ENSUCIAR);
+				nivelSuciedad = 0;
+
+			} catch (InterruptedException e) {
+				System.out.println(nombreTama + " ¡Limpieza interrumpida! La suciedad sigue en " + this.nivelSuciedad);
+				Thread.currentThread().interrupt();
+			}
+			System.out.println("<- " + nombreTama + " FINALIZA de limpiarse. Nivel de suciedad: " + this.nivelSuciedad);
+	        this.estadoTama = EstadoTamagochi.ESPERANDO; 
+		}
 	}
 	
 	
