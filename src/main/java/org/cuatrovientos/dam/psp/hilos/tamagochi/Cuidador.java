@@ -123,7 +123,6 @@ public class Cuidador {
         }
     }
     
-
     private static void jugarConTamagotchi(Tamagochi tama) {
         boolean esCorrecta = false;
         
