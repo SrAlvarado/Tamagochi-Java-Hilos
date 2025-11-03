@@ -80,7 +80,7 @@ public class Tamagochi implements Runnable{
 	}
 	
 	public synchronized void alimentarse(String comida) {
-		if (comprobarTamaLibreYVivo()) {
+		if (this.estadoTama == EstadoTamagochi.ESPERANDO && this.vivo) {
 			this.estadoTama = EstadoTamagochi.COMIENDO;
 			System.out.println("-> " + nombreTama + " EMPIEZA de comer " + comida);
 			
@@ -101,7 +101,7 @@ public class Tamagochi implements Runnable{
 	}
 	
 	public synchronized void limpiarse() {
-		if (comprobarTamaLibreYVivo()) {
+		if (this.estadoTama == EstadoTamagochi.ESPERANDO && this.vivo) {
 			this.estadoTama = EstadoTamagochi.LIMPIANDOSE;
 			
 			System.out.println("-> " + nombreTama + " EMPIEZA a limpiarse");
@@ -123,19 +123,10 @@ public class Tamagochi implements Runnable{
 		}
 	}	
 	
-	public synchronized String jugar() {
-	    String pregunta = this.generarPregunta();
-	    
-	    if (this.estadoTama == EstadoTamagochi.JUGANDO) {
-	        System.out.println("--- INTERACCIÓN --- " + nombreTama + " está esperando tu respuesta, Cuidador.");
-	    }
-	    
-	    return pregunta;
-	}
 	
 	public synchronized String generarPregunta() {
-		if (this.estadoTama != EstadoTamagochi.ESPERANDO || !this.vivo) {
-	        return nombreTama + " no puede jugar ahora, está " + this.estadoTama;
+		if ((this.estadoTama != EstadoTamagochi.ESPERANDO && this.estadoTama != EstadoTamagochi.JUGANDO) || !this.vivo) {
+	         return nombreTama + " no puede jugar ahora, está " + this.estadoTama;
 	    }
 	    
 	    this.estadoTama = EstadoTamagochi.JUGANDO;
@@ -167,8 +158,8 @@ public class Tamagochi implements Runnable{
 	}
 	
 	public synchronized boolean matar() {
-	    if (comprobarTamaLibreYVivo()) {
-	        System.out.println("!!! DESTRUCCIÓN INICIADA " + nombreTama + ": El Cuidador ha decidido matarme.");
+		if (this.estadoTama == EstadoTamagochi.ESPERANDO && this.vivo) {
+			System.out.println("!!! DESTRUCCIÓN INICIADA " + nombreTama + ": El Cuidador ha decidido matarme.");
 	        
 	        this.vivo = false;
 	        	        
