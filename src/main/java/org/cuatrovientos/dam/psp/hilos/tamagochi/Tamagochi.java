@@ -51,7 +51,7 @@ public class Tamagochi implements Runnable{
 				
 				if (this.estadoTama != EstadoTamagochi.LIMPIANDOSE) {
 					this.nivelSuciedad ++;
-					System.out.println(nombreTama + " Suciedad actual: " + this.nivelSuciedad);
+					System.out.println("\n"+nombreTama + " Suciedad actual: " + this.nivelSuciedad);
 				}
 				
 				if (this.nivelSuciedad >= 5 && this.nivelSuciedad < 10) {
@@ -107,7 +107,7 @@ public class Tamagochi implements Runnable{
 			System.out.println("-> " + nombreTama + " EMPIEZA a limpiarse");
 			
 			try {
-				Thread.sleep(TIEMPO_ENSUCIAR);
+				Thread.sleep(TIEMPO_LIMPIEZA);
 				nivelSuciedad = 0;
 
 			} catch (InterruptedException e) {
@@ -157,10 +157,10 @@ public class Tamagochi implements Runnable{
 	    boolean esCorrecta = (respuesta == this.resultadoJuegoCorrecto);
 	    
 	    if (esCorrecta) {
-	        System.out.println("¡Correcto! [" + nombreTama + "] dice: ¡Bien hecho, Cuidador! Juego finalizado.");
+	        System.out.println("¡Correcto! " + nombreTama + " dice: ¡Bien hecho, Cuidador! Juego finalizado.");
 	        this.estadoTama = EstadoTamagochi.ESPERANDO;
 	    } else {
-	        System.out.println("¡Incorrecto! [" + nombreTama + "] dice: ¡Sigo jugando! Generando nueva pregunta...");
+	        System.out.println("¡Incorrecto! " + nombreTama + " dice: ¡Sigo jugando! Generando nueva pregunta...");
 	    }
 	    
 	    return esCorrecta;

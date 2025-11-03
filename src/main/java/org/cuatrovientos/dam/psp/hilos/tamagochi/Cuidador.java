@@ -113,6 +113,7 @@ public class Cuidador {
                 tama.alimentarse("Manzana"); 
                 break;
             case 2: // Limpiar
+            	tama.limpiarse();
                 break;
             case 3: // Jugar
                 jugarConTamagotchi(tama);
