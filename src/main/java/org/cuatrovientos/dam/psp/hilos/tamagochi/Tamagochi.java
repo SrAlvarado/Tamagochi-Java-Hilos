@@ -9,15 +9,15 @@ public class Tamagochi implements Runnable{
 	private boolean vivo;
 	private Random rnd;
 	private int resultadoJuegoCorrecto;
-	private static final long TIEMPO_ENSUCIAR = 20000;
+	private static final long TIEMPO_TARDA_ENSUCIARSE = 20000;
 	private static final long TIEMPO_VIDA_MAX = 300000;
 	private static final long TIEMPO_LIMPIEZA = 5000;
-	private static final int NUMERO_MIN_GENERAR = 1;
-	private static final int NUMERO_MAX_GENERAR = 10;
+	private static final int NUMERO_MIN_GENERAR_RANDOM = 1;
+	private static final int NUMERO_MAX_GENERAR_RANDOM = 10;
 	
 	public Tamagochi(String nombreTama) {
 		this.nombreTama = nombreTama;
-		this.estadoTama = EstadoTamagochi.ESPERANDO;
+		asignarEstadoEsperando();
         this.nivelSuciedad = 0;
         this.vivo  = true;
         this.rnd = new Random();
@@ -42,29 +42,184 @@ public class Tamagochi implements Runnable{
     
 	@Override
 	public void run() {
-		System.out.println(nombreTama + " ha despertado y está " + estadoTama);
+		
+		mostrarMensajeTamaHaSidoCreado();
+		
 		long tiempoInicioVida = System.currentTimeMillis();
 		
 		while(vivo) {
+			
 			try {
-				Thread.sleep(TIEMPO_ENSUCIAR);
+				
+				Thread.sleep(TIEMPO_TARDA_ENSUCIARSE);
 				
 				incrementarNivelSuciedadSiNoSeEstaLimpiando();
 				
 				comprobarNivelDeSuciedadConLimiteEstablecido();
 				
-				comprobarTiempoDeVida(tiempoInicioVida);
+				comprobarTiempoDeVidaRestante(tiempoInicioVida);
 				
 			} catch (InterruptedException e) {
-				System.out.println(nombreTama + " ha sido interrumpido mientras esperaba.");
-                Thread.currentThread().interrupt();			
+				
+				mostrarMensajeEInterrumpirTamaYInterrumpirThread();		
+				
             }
 		}
 		
-		this.estadoTama = EstadoTamagochi.MUERTO; 
-        System.out.println(nombreTama + " ha muerto. (Estado: " + this.estadoTama + ")");
+		cambiarEstadoAMuertoYMostrarMensaje();
 	}
 
+	public void alimentarse(String comida) {
+		
+		if (comprobarTamaEstaEsperandoYVivo()) {
+			
+			cambiarEstadoComerYMostrarMensaje(comida);
+			
+			int tiempoComiendo = generarTiempoTardaEnComer();
+			
+			try {
+				
+				Thread.sleep(tiempoComiendo);
+				
+			}catch (InterruptedException e) {
+				
+                Thread.currentThread().interrupt();
+                
+            }
+			
+			mostrarMensajeTamaTerminaComer(comida);
+			
+            asignarEstadoEsperando();
+            
+        } else {
+        	
+            mostrarMensajeTamaNoPuedeLimpiarseEstaOcupado();
+            
+        }
+		
+	}
+
+
+	public void limpiarse() {
+		
+		if (comprobarTamaEstaEsperandoYVivo()) {
+			
+			cambiarEstadoALimpiarseYMostrarMensaje();
+			
+			try {
+				
+				limpiarTamagochi();
+
+			} catch (InterruptedException e) {
+				
+				mostrarMensajeEInterrumpirLimpieza();
+				
+			}
+			
+			mostrarMensajeLimpiezaFinalizada();
+			
+	        asignarEstadoEsperando(); 
+	        
+		}else {
+			
+            mostrarMensajeTamaNoPuedeLimpiarseEstaOcupado();
+            
+		}
+	}
+	
+	public String generarPregunta() {
+		
+		if (comprobarTamaEstaEsperandoYVivo() || comprobarTamaEstaJugando()) {	    
+	    
+	    cambiarEstadoAJugando();
+	    
+	    mostrarMensajeTamaComienzaAJugar();
+	    
+	    int primerNumeroSuma = generarPrimerNumeroRandomSumaJugar(); 
+	    
+	    int segundoNumeroSuma = generarSegundoNumeroRandomSumaJugar(primerNumeroSuma); 
+	    
+	    resultadoSumaDeDosNumerosJugar(primerNumeroSuma, segundoNumeroSuma);
+	    
+	    return primerNumeroSuma + " + " + segundoNumeroSuma;
+	    
+		}else {
+			
+	         return mostrarMensajeTamaNoPuedeJugarEstaOcupado();
+	         
+		}
+	}
+
+	public boolean procesarRespuesta(int respuesta) {
+		
+	    if (comprobarTamaEstaJugando() || this.vivo) { 
+	    
+		    boolean respuestaEsCorrecta = comprobarRespuestaSuma(respuesta);
+		    
+		    if (respuestaEsCorrecta) {
+		    	
+		        mensajeRespuestaCorrectaAJugar();
+		        
+		        asignarEstadoEsperando();
+		        
+		    } else {
+		    	
+		        mensajeRespuestaIncorrectaAJugar();
+		    
+		    }
+		    
+		    return respuestaEsCorrecta;
+	    
+	    }else {
+	    	
+	        System.out.println(nombreTama + " no estaba jugando, ignorando respuesta.");
+	        
+	        return false;
+	        
+	    }
+	    
+	}
+	
+	public boolean matar() {
+		
+		if (comprobarTamaEstaEsperandoYVivo()) {
+			
+			return matarTamagochi(); 
+	        
+	    } else if (!this.vivo) {
+	    	
+	         return tamaYaEstabaMuerto();
+	         
+	    } else {
+	    	
+	        return tamaNoPuedeDestruirseEstaRealizandoOtraAccion();
+	    }
+	}
+
+	private boolean matarTamagochi() {
+		System.out.println("!!! DESTRUCCIÓN INICIADA " + nombreTama + ": El Cuidador ha decidido matarme.");
+		
+		this.vivo = false;
+			        
+		return true;
+	}
+
+	private boolean tamaNoPuedeDestruirseEstaRealizandoOtraAccion() {
+		System.out.println(nombreTama + " NO puede ser destruido, está " + this.estadoTama + ".");
+		
+		return false;
+	}
+
+	private boolean tamaYaEstabaMuerto() {
+		System.out.println(nombreTama + " Ya está muerto.");
+		 
+		 return true;
+	}
+
+	private boolean comprobarTamaEstaEsperandoYVivo() {
+		return this.estadoTama == EstadoTamagochi.ESPERANDO && this.vivo;
+	}
+	
 	private void incrementarNivelSuciedadSiNoSeEstaLimpiando() {
 		if (this.estadoTama != EstadoTamagochi.LIMPIANDOSE) {
 			this.nivelSuciedad ++;
@@ -72,7 +227,7 @@ public class Tamagochi implements Runnable{
 		}
 	}
 
-	private void comprobarTiempoDeVida(long tiempoInicioVida) {
+	private void comprobarTiempoDeVidaRestante(long tiempoInicioVida) {
 		long tiempoActual = System.currentTimeMillis();
 		
 		if (tiempoActual - tiempoInicioVida >= TIEMPO_VIDA_MAX) {
@@ -89,107 +244,108 @@ public class Tamagochi implements Runnable{
 			this.vivo = false;
 		}
 	}
-
-	public void alimentarse(String comida) {
-		if (estadoEsperando() && this.vivo) {
-			this.estadoTama = EstadoTamagochi.COMIENDO;
-			System.out.println("-> " + nombreTama + " EMPIEZA de comer " + comida);
-			
-			int tiempoComiendo = 1000 + rnd.nextInt(2000);
-			
-			try {
-				Thread.sleep(tiempoComiendo);
-			}catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-			System.out.println("<- " + nombreTama + " FINALIZA de comer " + comida);
-            this.estadoTama = EstadoTamagochi.ESPERANDO;
-            
-        } else {
-            System.out.println(nombreTama + " no puede comer ahora, está " + this.estadoTama);
-        }
+	
+	private void asignarEstadoEsperando() {
+		this.estadoTama = EstadoTamagochi.ESPERANDO;
+	}
+	
+	private void mostrarMensajeEInterrumpirTamaYInterrumpirThread() {
+		System.out.println(nombreTama + " ha sido interrumpido mientras esperaba.");
 		
+		Thread.currentThread().interrupt();
 	}
 	
-	public void limpiarse() {
-		if (estadoEsperando() && this.vivo) {
-			this.estadoTama = EstadoTamagochi.LIMPIANDOSE;
-			
-			System.out.println("-> " + nombreTama + " EMPIEZA a limpiarse");
-			
-			try {
-				Thread.sleep(TIEMPO_LIMPIEZA);
-				nivelSuciedad = 0;
-
-			} catch (InterruptedException e) {
-				System.out.println(nombreTama + " ¡Limpieza interrumpida! La suciedad sigue en " + this.nivelSuciedad);
-				Thread.currentThread().interrupt();
-			}
-			
-			System.out.println("<- " + nombreTama + " FINALIZA de limpiarse. Nivel de suciedad: " + this.nivelSuciedad);
-	        this.estadoTama = EstadoTamagochi.ESPERANDO; 
-	        
-		}else {
-            System.out.println(nombreTama + " no puede comer ahora, está " + this.estadoTama);
-		}
+	private void cambiarEstadoAMuertoYMostrarMensaje() {
+		this.estadoTama = EstadoTamagochi.MUERTO; 
+		
+        System.out.println(nombreTama + " ha muerto. (Estado: " + this.estadoTama + ")");
 	}	
-	
-	
-	public String generarPregunta() {
-		if ((estadoEsperando() && this.estadoTama == EstadoTamagochi.JUGANDO) || this.vivo) {	    
-	    
-	    this.estadoTama = EstadoTamagochi.JUGANDO;
-	    System.out.println("-> " + nombreTama + " COMIENZA a jugar. Pregunta generada.");
-	    
-	    int primerNumeroSuma = rnd.nextInt(NUMERO_MIN_GENERAR, NUMERO_MAX_GENERAR); 
-	    int segundoNumeroSuma = rnd.nextInt(NUMERO_MIN_GENERAR, NUMERO_MAX_GENERAR - primerNumeroSuma); 
-	    this.resultadoJuegoCorrecto = primerNumeroSuma + segundoNumeroSuma;
-	    
-	    return primerNumeroSuma + " + " + segundoNumeroSuma;
-		}else {
-	         return nombreTama + " no puede jugar ahora, está " + this.estadoTama;
-		}
+
+	private void mensajeRespuestaCorrectaAJugar() {
+		System.out.println("¡Correcto! " + nombreTama + " dice: ¡Bien hecho, Cuidador! Juego finalizado.");
 	}
 
-	public boolean procesarRespuesta(int respuesta) {
-	    if (this.estadoTama == EstadoTamagochi.JUGANDO || this.vivo) { 
-	    
-	    boolean respuestaEsCorrecta = (respuesta == this.resultadoJuegoCorrecto);
-	    
-	    if (respuestaEsCorrecta) {
-	        System.out.println("¡Correcto! " + nombreTama + " dice: ¡Bien hecho, Cuidador! Juego finalizado.");
-	        this.estadoTama = EstadoTamagochi.ESPERANDO;
-	    } else {
-	        System.out.println("¡Incorrecto! " + nombreTama + " dice: ¡Sigo jugando! Generando nueva pregunta...");
-	    }
-	    
-	    return respuestaEsCorrecta;
-	    
-	    }else {
-	        System.out.println(nombreTama + " no estaba jugando, ignorando respuesta.");
-	        return false;
-	    }
-	    
+	private void mensajeRespuestaIncorrectaAJugar() {
+		System.out.println("¡Incorrecto! " + nombreTama + " dice: ¡Sigo jugando! Generando nueva pregunta...");
 	}
 	
-	public boolean matar() {
-		if (estadoEsperando() && this.vivo) {
-			System.out.println("!!! DESTRUCCIÓN INICIADA " + nombreTama + ": El Cuidador ha decidido matarme.");
-	        
-	        this.vivo = false;
-	        	        
-	        return true; 
-	        
-	    } else if (!this.vivo) {
-	         System.out.println(nombreTama + " Ya está muerto.");
-	         return true;
-	    } else {
-	        System.out.println(nombreTama + " NO puede ser destruido, está " + this.estadoTama + ".");
-	        return false;
-	    }
-	}
-	private boolean estadoEsperando() {
-		return this.estadoTama == EstadoTamagochi.ESPERANDO;
+	private void cambiarEstadoAJugando() {
+		this.estadoTama = EstadoTamagochi.JUGANDO;
 	}
 
+	private boolean comprobarRespuestaSuma(int respuesta) {
+		boolean respuestaEsCorrecta = (respuesta == this.resultadoJuegoCorrecto);
+		return respuestaEsCorrecta;
+	}
+
+	private void cambiarEstadoComerYMostrarMensaje(String comida) {
+		this.estadoTama = EstadoTamagochi.COMIENDO;
+		
+		System.out.println("-> " + nombreTama + " EMPIEZA de comer " + comida);
+	}
+
+	private int generarTiempoTardaEnComer() {
+		int tiempoComiendo = 1000 + rnd.nextInt(2000);
+		return tiempoComiendo;
+	}
+	
+	private void mostrarMensajeTamaNoPuedeLimpiarseEstaOcupado() {
+		System.out.println(nombreTama + " no puede comer ahora, está " + this.estadoTama);
+	}
+
+	private void mostrarMensajeLimpiezaFinalizada() {
+		System.out.println("<- " + nombreTama + " FINALIZA de limpiarse. Nivel de suciedad: " + this.nivelSuciedad);
+	}
+
+	private void mostrarMensajeEInterrumpirLimpieza() {
+		System.out.println(nombreTama + " ¡Limpieza interrumpida! La suciedad sigue en " + this.nivelSuciedad);
+		
+		Thread.currentThread().interrupt();
+	}
+
+	private void cambiarEstadoALimpiarseYMostrarMensaje() {
+		this.estadoTama = EstadoTamagochi.LIMPIANDOSE;
+		
+		System.out.println("-> " + nombreTama + " EMPIEZA a limpiarse");
+	}
+
+	private void limpiarTamagochi() throws InterruptedException {
+		Thread.sleep(TIEMPO_LIMPIEZA);
+		
+		nivelSuciedad = 0;
+	}	
+
+	private String mostrarMensajeTamaNoPuedeJugarEstaOcupado() {
+		return nombreTama + " no puede jugar ahora, está " + this.estadoTama;
+	}
+
+	private void resultadoSumaDeDosNumerosJugar(int primerNumeroSuma, int segundoNumeroSuma) {
+		this.resultadoJuegoCorrecto = primerNumeroSuma + segundoNumeroSuma;
+	}
+
+	private int generarSegundoNumeroRandomSumaJugar(int primerNumeroSuma) {
+		int segundoNumeroSuma = rnd.nextInt(NUMERO_MIN_GENERAR_RANDOM, NUMERO_MAX_GENERAR_RANDOM - primerNumeroSuma);
+		return segundoNumeroSuma;
+	}
+
+	private int generarPrimerNumeroRandomSumaJugar() {
+		int primerNumeroSuma = rnd.nextInt(NUMERO_MIN_GENERAR_RANDOM, NUMERO_MAX_GENERAR_RANDOM);
+		return primerNumeroSuma;
+	}
+
+	private void mostrarMensajeTamaComienzaAJugar() {
+		System.out.println("-> " + nombreTama + " COMIENZA a jugar. Pregunta generada.");
+	}
+
+	private void mostrarMensajeTamaHaSidoCreado() {
+		System.out.println(nombreTama + " se ha creado y está " + estadoTama);
+	}
+
+	private void mostrarMensajeTamaTerminaComer(String comida) {
+		System.out.println("<- " + nombreTama + " FINALIZA de comer " + comida);
+	}
+
+	private boolean comprobarTamaEstaJugando() {
+		return this.estadoTama == EstadoTamagochi.JUGANDO;
+	}
 }
