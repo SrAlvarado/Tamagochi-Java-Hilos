@@ -129,54 +129,61 @@ public class Cuidador {
     	}
     }
     
+
     private static void jugarConTamagotchi(Tamagochi tama) {
-    	
-    	boolean sigueJugando = true;
+        
+        boolean sigueJugando = true;
+        
+        tama.comprobarEstadoYCambiarEstadoaJugando();
+        
+        if (tama.getEstado() != EstadoTamagochi.JUGANDO) {
+            System.out.println(tama.getNombreTama() + " está ocupado. No se puede iniciar el juego.");
+            return;
+        }
 
-    	while (sigueJugando) {
+        synchronized (tama) { 
+            
+            while (sigueJugando) {
+                
+                try {
+                    System.out.println("Cuidador esperando la pregunta de " + tama.getNombreTama() + "...");
+                    tama.wait(); 
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
 
-    		tama.comprobarEstadoYCambiarEstadoaJugando();
+                System.out.print("Tu respuesta: "); 
+                int respuestaUsuario = -1;
+                
+                try {
+                    respuestaUsuario = Integer.parseInt(scanner.nextLine());
+                } catch (NumberFormatException e) {
+                    System.out.println(COLOR_ROJO + "Respuesta no válida. Intenta de nuevo." + COLOR_PREDETERMINADO);
+                    continue; 
+                }
+                
+                tama.procesarRespuesta(respuestaUsuario);
 
-    		if (tama.getEstado() != EstadoTamagochi.JUGANDO) {
-    			
-				sigueJugando = false;
-				
-				continue;
-				
-    		}
-   
-    		try {
-    			
-    			Thread.sleep(50); 
-    			
-    		} catch (InterruptedException ignored) {}
-
-    		if (tama.getEstado() == EstadoTamagochi.ESPERANDO) {
-    			
-    			sigueJugando = false;
-    			
-    		} else if (tama.getEstado() == EstadoTamagochi.JUGANDO) {
-
-    			System.out.print("\n¿Quieres intentar responder de nuevo con " + tama.getNombreTama() + "? (s/n): ");
-    			
-    			String intento = scanner.nextLine().toLowerCase();
-    			
-    			if (!intento.equals("s")) {
-    			
-    				System.out.println(tama.getNombreTama() + " vuelve a ESPERANDO. [Nota: Esto lo debería hacer el Tamagotchi, saliendo del bucle por ahora].");
-    				
-    				sigueJugando = false;
-    			}
-    			
-    		} else {
-    			
-    			sigueJugando = false;
-    			
-    		}
-    	}
+                tama.notifyAll(); 
+                
+                if (tama.getEstado() == EstadoTamagochi.ESPERANDO) {
+                    sigueJugando = false;
+                } else {
+                    
+                    System.out.print("\n¿Quieres seguir jugando con " + tama.getNombreTama() + "? (s/n): ");
+                    String intento = scanner.nextLine().toLowerCase();
+                    
+                    if (!intento.equals("s")) {
+                        tama.cambiarEstadoEsperando();
+                        sigueJugando = false;
+                    } 
+                  
+                }
+            }
+        } 
     }
-
-
+    
     private static void matarATodosYSalir() {
         System.out.println("\nATENCIÓN: Iniciando destrucción de todos los Tamagotchis antes de salir.");
         for (Tamagochi tama : misTamagotchis) {

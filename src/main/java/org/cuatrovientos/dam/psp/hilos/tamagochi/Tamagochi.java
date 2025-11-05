@@ -17,21 +17,8 @@ public class Tamagochi implements Runnable{
 	private static final long TIEMPO_LIMPIEZA = 5000;
 	private static final int NUMERO_MIN_GENERAR_RANDOM = 1;
 	private static final int NUMERO_MAX_GENERAR_RANDOM = 10;
-	private static final long INTERVALO_CHEQUEO = 1000; 
+	private static final long INTERVALO_CHEQUEO = 1000;
 	private static final int CHEQUEOS_PARA_ENSUCIAR = (int)(TIEMPO_TARDA_ENSUCIARSE / INTERVALO_CHEQUEO);
-	
-	
-	
-	//TODO
-	/**
-	 * TENGO QUE COGER TODOS LOS METODOS PRINCIPALES (JUGAR, LIMPIARSE, COMER, MORIR)
-	 * HACER QUE SIMPLEMENTE LES CAMBIE EL ESTADO A SU ESTADO SI NO ESTAN REALIZANDO NINGUNA ACCION
-	 * EN EL RUN HACER IFS PARA TODOS LOS ESTADOS Y AHI LLAMAR A OTRO METODO PRIVADO SACADA
-	 * CON EL CODIGO DE LOS METODOS ANTERIORES. ENTONCES TAMBIEN TENGO QUE LLAMAR AL RUN 
-	 * EN EL CUIDADOR Y SIMPLEMENTE EJEMPLO: DECIR TAMA.JUGAR() ENTONCES LE CAMBIARA EL ESTADO SI PUEDE
-	 * Y SI ES ASI, ESTARA REVISANDO EL RUN SIEMPRE Y MIRARA QUE SU ESTADO A CAMBIADO A JUGAR
-	 * ENTONCES LLAMARA AL METODO PRIVADO QUE REALIZA JUGAR
-	 */
 	
 	public Tamagochi(String nombreTama) {
 		this.nombreTama = nombreTama;
@@ -67,18 +54,15 @@ public class Tamagochi implements Runnable{
 		mostrarMensajeTamaHaSidoCreado();
 
 		long tiempoInicioVida = System.currentTimeMillis();
+		
+		int contadorChequeos = 0;
 
 		while(vivo) {
 
 			try {
 	
+				Thread.sleep(TIEMPO_TARDA_ENSUCIARSE);
 				
-				if (comprobarTamaEstaEsperandoYVivo()) {
-					
-					Thread.sleep(TIEMPO_TARDA_ENSUCIARSE);
-			
-					incrementarNivelSuciedadSiNoSeEstaLimpiando();
-				}
 				
 				if (comprobarTamaEstaComiendo()) {
 					alimentarse("manzana");
@@ -90,9 +74,14 @@ public class Tamagochi implements Runnable{
 				
 				if (comprobarTamaEstaJugando()) {
 					jugar();
+					
 				}
 				
-				comprobarNivelDeSuciedadConLimiteEstablecido();
+                    incrementarNivelSuciedadSiNoSeEstaLimpiando();
+                    comprobarNivelDeSuciedadConLimiteEstablecido();
+                
+	            
+				
 			
 				comprobarTiempoDeVidaRestante(tiempoInicioVida);
 	
@@ -186,32 +175,46 @@ public class Tamagochi implements Runnable{
 		
 	}
 	
+
 	private void jugar() {
-		 mostrarMensajeTamaComienzaAJugar();
-		    
-		    int primerNumeroSuma = generarPrimerNumeroRandomSumaJugar(); 
-		    int segundoNumeroSuma = generarSegundoNumeroRandomSumaJugar(primerNumeroSuma); 
-		    resultadoSumaDeDosNumerosJugar(primerNumeroSuma, segundoNumeroSuma);
-		    
-		    System.out.print(primerNumeroSuma + " + " + segundoNumeroSuma + " = "); 
-		    
-		    boolean respuestaEsCorrecta = false;
-		    try {
-		        respuestaEsCorrecta = comprobarRespuestaSuma(Integer.parseInt(this.scannerDelCuidador.nextLine()));
-		    } catch (NumberFormatException e) {
-		        System.out.println("Respuesta no numérica. Se considera incorrecta.");
-		    }
-		    
-		    if (respuestaEsCorrecta) {
-		        
-		        mensajeRespuestaCorrectaAJugar();
-		        asignarEstadoEsperando();
-		        
-		    } else {
-		        
-		        mensajeRespuestaIncorrectaAJugar();
-		    }
+	    
+	    synchronized (this) { // Usamos el Tamagotchi como monitor
+	        
+	        mostrarMensajeTamaComienzaAJugar();
+
+	        int primerNumeroSuma = generarPrimerNumeroRandomSumaJugar();
+	        int segundoNumeroSuma = generarSegundoNumeroRandomSumaJugar(primerNumeroSuma);
+	        resultadoSumaDeDosNumerosJugar(primerNumeroSuma, segundoNumeroSuma);
+	        
+	        System.out.print(primerNumeroSuma + " + " + segundoNumeroSuma + " = ");
+	        
+	        // 2. Notificamos al Cuidador que la pregunta ya está en pantalla
+	        this.notifyAll(); 
+	        
+	        // 3. EL TAMAGOTCHI SE DUERME ESPERANDO LA RESPUESTA DEL CUIDADOR
+	        try {
+	            System.out.println("\n" + nombreTama + " espera tu respuesta...");
+	            this.wait(); // El hilo del Tamagochi se detiene aquí.
+	        } catch (InterruptedException e) {
+	            Thread.currentThread().interrupt();
+	        }
+	    }
 	}
+	public boolean procesarRespuesta(int respuesta) {
+		if (this.estadoTama != EstadoTamagochi.JUGANDO) {
+			return false;
+		}
+		
+		boolean esCorrecta = (respuesta == this.resultadoJuegoCorrecto);
+
+		if (esCorrecta) {
+			mensajeRespuestaCorrectaAJugar();
+			asignarEstadoEsperando();
+		} else {
+			mensajeRespuestaIncorrectaAJugar();
+		}
+		return esCorrecta;
+		}
 	
 	
 	public boolean matar() {
@@ -343,6 +346,13 @@ public class Tamagochi implements Runnable{
 	
 	}
 
+
+	public void cambiarEstadoEsperando() {
+	
+		this.estadoTama = EstadoTamagochi.ESPERANDO;
+	
+	}
+	
 	private void cambiarEstadoComer() {
 	
 		this.estadoTama = EstadoTamagochi.COMIENDO;
@@ -416,8 +426,14 @@ public class Tamagochi implements Runnable{
 
 	private int generarSegundoNumeroRandomSumaJugar(int primerNumeroSuma) {
 	
-		int segundoNumeroSuma = rnd.nextInt(NUMERO_MIN_GENERAR_RANDOM, NUMERO_MAX_GENERAR_RANDOM - primerNumeroSuma);
-	
+		int bound = NUMERO_MAX_GENERAR_RANDOM - primerNumeroSuma;
+		
+		if (bound <= 1) {
+	        return 0; 
+	    }
+				
+		int segundoNumeroSuma = rnd.nextInt(NUMERO_MIN_GENERAR_RANDOM, bound);
+		
 		return segundoNumeroSuma;
 	
 	}
